@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { User, LogOut, Pencil, X, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 
 interface Profile {
   full_name: string | null
@@ -19,6 +21,7 @@ export function ProfileClient({ profile }: { profile: Profile }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const handleSubmit = async (formData: FormData) => {
     const ig = formData.get('instagram_username') as string
@@ -37,6 +40,13 @@ export function ProfileClient({ profile }: { profile: Profile }) {
       setError(res.message || 'Terjadi kesalahan')
     }
     setLoading(false)
+  }
+
+  const handleLogout = async () => {
+    setShowLogoutConfirm(false)
+    toast.success('Logout berhasil')
+    await new Promise(r => setTimeout(r, 500))
+    await signOut()
   }
 
   return (
@@ -96,12 +106,22 @@ export function ProfileClient({ profile }: { profile: Profile }) {
         )}
       </div>
 
-      <form action={signOut}>
-        <Button variant="destructive" className="w-full gap-2">
+      <div>
+        <Button variant="destructive" className="w-full gap-2" onClick={() => setShowLogoutConfirm(true)}>
           <LogOut size={18} />
           Keluar
         </Button>
-      </form>
+      </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Keluar Akun?"
+        description="Kamu yakin ingin keluar dari akun ini? Kamu harus login kembali untuk melihat stempelmu."
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   )
 }

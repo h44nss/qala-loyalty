@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RotateCcw } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function GenerateQRPage() {
   const [amount, setAmount] = useState(1)
@@ -47,8 +48,10 @@ export default function GenerateQRPage() {
       setTokenCode(token.token_code)
       setExpiresAt(new Date(token.expires_at))
       setTimeLeft(Math.floor((new Date(token.expires_at).getTime() - Date.now()) / 1000))
+      toast.success('QR Code berhasil di-generate')
     } else {
       setError(res.message || 'Gagal generate token. Coba lagi.')
+      toast.error(res.message || 'Gagal generate QR Code')
     }
     setLoading(false)
   }

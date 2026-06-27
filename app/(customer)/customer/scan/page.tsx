@@ -6,6 +6,7 @@ import { claimStampToken } from '@/app/actions/stamp'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ScanLine, CheckCircle2, XCircle, RotateCcw } from 'lucide-react'
+import { toast } from 'sonner'
 
 function ScanContent() {
   const [loading, setLoading] = useState(false)
@@ -30,10 +31,12 @@ function ScanContent() {
     const res = await claimStampToken(tokenCode)
     if (res.success) {
       setSuccess('Stempel berhasil ditambahkan! 🎉')
+      toast.success('Stempel Berhasil Diklaim! 🎉')
       setPendingToken(null)
       setTimeout(() => router.push('/customer/dashboard'), 2500)
     } else {
       setError(res.message || 'Terjadi kesalahan')
+      toast.error(res.message || 'Gagal klaim stempel')
       setLoading(false)
     }
   }

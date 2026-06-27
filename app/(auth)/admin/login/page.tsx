@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -49,6 +50,7 @@ export default function AdminLoginPage() {
     try {
       const res = await adminLogin(formData)
       if (res.success) {
+        toast.success('Login Admin berhasil')
         // Navigate client-side after confirmed success from server
         router.push('/admin/dashboard')
       } else {

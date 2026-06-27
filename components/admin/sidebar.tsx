@@ -6,6 +6,8 @@ import { LayoutDashboard, QrCode, Users, Gift, Settings, LogOut, Menu, X } from 
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { signOut } from '@/app/actions/auth'
+import { toast } from 'sonner'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 
 const navItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -18,6 +20,14 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
+  const handleLogout = async () => {
+    setShowLogoutConfirm(false)
+    toast.success('Logout Admin berhasil')
+    await new Promise(r => setTimeout(r, 500))
+    await signOut()
+  }
 
   return (
     <>
@@ -61,12 +71,12 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 border-t border-slate-200">
-          <form action={signOut}>
-             <button type="submit" className="flex items-center w-full gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+          <div>
+             <button onClick={() => setShowLogoutConfirm(true)} className="flex items-center w-full gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
                <LogOut size={20} />
                Logout
              </button>
-          </form>
+          </div>
         </div>
       </div>
       
@@ -76,6 +86,16 @@ export function Sidebar() {
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Keluar Akun Admin?"
+        description="Yakin ingin keluar dari panel admin? Anda harus login ulang untuk masuk."
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </>
   )
 }

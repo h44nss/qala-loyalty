@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/lib/supabase/types'
 import { Search, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type CustomerResult = {
   id: string
@@ -20,6 +21,7 @@ export function RedeemRewardClient() {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [customer, setCustomer] = useState<CustomerResult | null>(null)
+  const [searchResults, setSearchResults] = useState<CustomerResult[]>([])
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -38,18 +40,24 @@ export function RedeemRewardClient() {
     setError('')
     setSuccessMsg('')
     setCustomer(null)
+    setSearchResults([])
 
-    const searchPhone = phone.startsWith('0') ? '+62' + phone.substring(1) : phone
+    const searchQuery = phone.trim()
+    if (!searchQuery) {
+      setLoading(false)
+      return
+    }
 
     const { data, error: dbErr } = await supabase
       .from('profiles')
       .select('id, full_name, phone_number, current_stamp')
-      .eq('phone_number', searchPhone)
       .eq('role', 'customer')
-      .single()
+      .or(`full_name.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%`)
+      .limit(5)
 
-    if (dbErr || !data) {
-      setError('Customer tidak ditemukan. Pastikan nomor HP benar.')
+    if (dbErr || !data || data.length === 0) {
+      setError('Customer tidak ditemukan. Coba nama atau nomor HP lain.')
+      toast.error('Customer tidak ditemukan')
       setLoading(false)
       return
     }
@@ -61,8 +69,21 @@ export function RedeemRewardClient() {
       .single()
 
     const target = set ? parseInt(set.value) : 10
-    setCustomer({ ...data, target })
+    
+    const results = data.map(d => ({ ...d, target }))
+    
+    if (results.length === 1) {
+      setCustomer(results[0])
+    } else {
+      setSearchResults(results)
+    }
+    
     setLoading(false)
+  }
+
+  const selectCustomer = (c: CustomerResult) => {
+    setCustomer(c)
+    setSearchResults([])
   }
 
   const handleRedeem = async () => {
@@ -73,10 +94,14 @@ export function RedeemRewardClient() {
     const res = await redeemRewardAction(customer.id)
     if (res.success) {
       setSuccessMsg(`Reward berhasil ditukarkan! Sisa stempel: ${res.newBalance ?? 0}`)
+      toast.success('Reward berhasil ditukarkan!', {
+        description: `Sisa stempel: ${res.newBalance ?? 0}`
+      })
       setCustomer(null)
       setPhone('')
     } else {
       setError(res.message || 'Terjadi kesalahan')
+      toast.error(res.message || 'Terjadi kesalahan')
     }
     setLoading(false)
   }
@@ -92,7 +117,7 @@ export function RedeemRewardClient() {
         <form onSubmit={handleSearch} className="flex gap-3">
           <Input
             type="text"
-            placeholder="Nomor HP (contoh: 08123...)"
+            placeholder="Ketik nama atau nomor HP..."
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
@@ -107,6 +132,29 @@ export function RedeemRewardClient() {
 
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm">{error}</div>
+      )}
+
+      {searchResults.length > 0 && !customer && (
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-700 px-2">Pilih Customer:</h2>
+          <div className="divide-y divide-slate-100">
+            {searchResults.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => selectCustomer(c)}
+                className="w-full text-left p-3 hover:bg-emerald-50 rounded-xl transition-colors flex justify-between items-center group"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900 group-hover:text-emerald-700">{c.full_name}</p>
+                  <p className="text-xs text-slate-500">{c.phone_number}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-emerald-600">{c.current_stamp ?? 0} Stempel</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {successMsg && (
